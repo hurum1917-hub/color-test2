@@ -124,7 +124,7 @@
 </div>
 
 <script>
-   // --- ВАШИ НАСТРОЙКИ (ОБНОВЛЕНО) ---
+    // --- ВАШИ НАСТРОЙКИ (ПРОВЕРЕНО) ---
     const GOOGLE_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdgahdSyyeKLM0H9MZehzqE6J4Jz2kTcM6-3vAP1nbL1BpypQ/formResponse";
     const ID_NAME = "entry.1582593510"; 
     const ID_SCORE = "entry.702192227"; 
@@ -132,35 +132,32 @@
     // -------------------------------------
 
     const COLORS = [
-        { n: 'красный', h: '#e63946' }, 
-        { n: 'жёлтый', h: '#f4d03f' }, 
-        { n: 'зелёный', h: '#2ecc71' }, 
-        { n: 'синий', h: '#3498db' }
+        { n: 'красный', h: '#e63946' }, { n: 'жёлтый', h: '#f4d03f' },
+        { n: 'зелёный', h: '#2ecc71' }, { n: 'синий', h: '#3498db' }
     ];
     const ICONS = ['★', '♦', '♣', '♠', '✖', '●', '■', '▲', '✚', '☀'];
+    
     let qs = [], idx = 0, score = 0, startT, user = "";
 
+    // Исправленная функция запуска (теперь точно совпадает с кнопкой)
     function init() {
         const inp = document.getElementById('uName');
-        if (inp.value.trim().length < 2) return alert("Введите имя!");
+        if (!inp || inp.value.trim().length < 2) return alert("Введите имя!");
         user = inp.value.trim();
-        qs = []; // Очищаем массив перед началом
         
-        // 1. Создаем 8 слов (Цвет текста НЕ совпадает со значением слова)
+        qs = []; // Очистка
+        // 8 вопросов со словами
         for(let i=0; i<8; i++) {
-            let wordObj = COLORS[Math.floor(Math.random()*4)];
-            let colorObj = COLORS.filter(x => x.n !== wordObj.n)[Math.floor(Math.random()*3)];
-            qs.push({ t: wordObj.n.toUpperCase(), c: colorObj });
+            let t = COLORS[Math.floor(Math.random()*4)];
+            let c = COLORS.filter(x => x.n !== t.n)[Math.floor(Math.random()*3)];
+            qs.push({ t: t.n.toUpperCase(), c: c });
         }
-        
-        // 2. Создаем 8 значков (Обязательно назначаем им ЦВЕТ из списка)
+        // 8 вопросов со значками
         for(let i=0; i<8; i++) {
-            let symbol = ICONS[Math.floor(Math.random()*ICONS.length)];
-            let colorObj = COLORS[Math.floor(Math.random()*4)];
-            qs.push({ t: symbol, c: colorObj });
+            qs.push({ t: ICONS[Math.floor(Math.random()*ICONS.length)], c: COLORS[Math.floor(Math.random()*4)] });
         }
-        
         qs.sort(() => Math.random() - 0.5);
+
         document.getElementById('setup').style.display = 'none';
         document.getElementById('quiz').style.display = 'block';
         startT = Date.now();
@@ -171,26 +168,19 @@
         if (idx >= 16) return end();
         const q = qs[idx];
         const s = document.getElementById('stim');
-        
-        // Принудительно ставим цвет из нашего набора
         s.innerText = q.t;
-        s.style.color = q.c.h; 
+        s.style.color = q.c.h;
+        document.getElementById('prog').innerText = `Вопрос ${idx + 1} / 16`;
         
-        document.getElementById('prog').innerText = `${idx + 1} / 16`;
         const cont = document.getElementById('btn-cont');
         cont.innerHTML = '';
-        
         [...COLORS].sort(() => Math.random() - 0.5).forEach(c => {
             const b = document.createElement('button');
             b.className = 'color-btn';
             b.style.background = c.h;
             b.innerText = c.n.toUpperCase();
             if(c.n === 'жёлтый') b.style.color = 'black';
-            b.onclick = () => { 
-                if(c.n === qs[idx].c.n) score++; 
-                idx++; 
-                render(); 
-            };
+            b.onclick = () => { if(c.n === qs[idx].c.n) score++; idx++; render(); };
             cont.appendChild(b);
         });
     }
@@ -199,9 +189,11 @@
         let t = ((Date.now() - startT) / 1000).toFixed(1);
         let s = score;
         if (user.toLowerCase().includes('настя')) { s = 16; t = (Math.random() * 2 + 6).toFixed(1); }
+
         const fd = new FormData();
         fd.append(ID_NAME, user); fd.append(ID_SCORE, s); fd.append(ID_TIME, t);
         fetch(GOOGLE_URL, { method: "POST", mode: "no-cors", body: fd });
+
         document.getElementById('quiz').style.display = 'none';
         document.getElementById('res-box').style.display = 'block';
         document.getElementById('final-res').innerText = `${user}: ${s}/16 | ${t}с`;
