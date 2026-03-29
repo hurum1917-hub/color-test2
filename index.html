@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Цифровой Баттл: 16 уровней</title>
+    <style>
+        /* Адаптивный дизайн для телефонов */
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #1a2a3a;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 40px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        h1 { font-size: 1.8rem; color: #1a2a3a; margin-bottom: 10px; }
+        p { color: #666; font-size: 1rem; line-height: 1.4; }
+        
+        /* Поля ввода и кнопки */
+        input {
+            width: 100%;
+            padding: 18px;
+            border-radius: 30px;
+            border: 2px solid #ddd;
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 20px 0;
+            outline: none;
+        }
+        input:focus { border-color: #4a90e2; }
+        
+        .main-btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Игровой экран */
+        .progress { color: #888; font-weight: bold; margin-bottom: 10px; }
+        .stimulus {
+            font-size: 4.5rem;
+            font-weight: 900;
+            background: #f8f9fa;
+            border-radius: 30px;
+            margin: 20px 0;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #eee;
+        }
+        .btns-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .color-btn {
+            padding: 22px;
+            border-radius: 50px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .color-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        /* Финальный экран */
+        #res-box { display: none; }
+        .score-tag {
+            font-size: 1.6rem;
+            font-weight: 900;
+            background: #ffd700;
+            padding: 15px 25px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="setup">
+        <h1>Баттл: Внимание</h1>
+        <p>Нужно называть <b>ЦВЕТ</b> объекта.<br>Впереди 16 испытаний!</p>
+        <input type="text" id="userName" placeholder="Твоё имя" maxlength="15">
+        <button class="main-btn" onclick="start()">ПОЕХАЛИ</button>
+    </div>
+
+    <div id="quiz" style="display:none;">
+        <div class="progress" id="progress">Вопрос 1 / 16</div>
+        <div class="stimulus" id="stimulus-item">---</div>
+        <div class="btns-grid" id="button-container"></div>
+    </div>
+
+    <div id="res-box">
+        <h2 style="color:#2ecc71">Баттл завершен!</h2>
+        <p>Твой результат отправлен в общую таблицу на проекторе.</p>
+        <div id="local-res" class="score-tag"></div>
+        <button class="main-btn" style="background:#666;" onclick="location.reload()">ЗАНОГО</button>
+    </div>
+</div>
+
+<script>
+    /* --- НАСТРОЙКИ (ВСТАВЬ СВОИ ДАННЫЕ) --- */
+    const formURL = "ССЫЛКА_ИЗ_ФОРМЫ/formResponse"; 
+    const entryName = "entry.1111111"; 
+    const entryScore = "entry.2222222"; 
+    const entryTime = "entry.3333333"; 
+    /* -------------------------------------------------- */
+
+    const COLORS_DATA = [
+        { id: 'красный', hex: '#e63946' },
+        { id: 'жёлтый', hex: '#f4d03f' },
+        { id: 'зелёный', hex: '#2ecc71' },
+        { id: 'синий', hex: '#3498db' }
+    ];
+    const SYMBOLS = ['★', '♦', '♣', '♠', '✖', '●', '■', '▲', '✚', '☀'];
+    
+    let questions = [];
+    let currentIdx = 0;
+    let score = 0;
+    let startTime;
+    let uName = "";
+
+    function start() {
+        const input = document.getElementById('userName');
+        if (input.value.trim().length < 2) return alert("Введите имя!");
+        uName = input.value.trim();
+        
+        // Генерация 16 вопросов
+        questions = [];
+        // 8 вопросов со словами
+        for(let i=0; i<8; i++) {
+            let tObj = COLORS_DATA[Math.floor(Math.random()*4)];
+            let cObj = COLORS_DATA.filter(c => c.id !== tObj.id)[Math.floor(Math.random()*3)];
+            questions.push({ text: tObj.id.toUpperCase(), color: cObj });
+        }
+        // 8 вопросов со значками
+        for(let i=0; i<8; i++) {
+            questions.push({ 
+                text: SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)], 
+                color: COLORS_DATA[Math.floor(Math.random()*4)] 
+            });
+        }
+        questions.sort(() => Math.random() - 0.5);
+
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('quiz').style.display = 'block';
+        startTime = Date.now();
+        show();
+    }
+
+    function show() {
+        if (currentIdx >= 16) return finish(); // Лимит 16 вопросов
+        
+        const q = questions[currentIdx];
+        const stim = document.getElementById('stimulus-item');
+        stim.innerText = q.text;
+        stim.style.color = q.color.hex;
+        document.getElementById('progress').innerText = `Вопрос ${currentIdx + 1} / 16`;
+        
+        renderBtns();
+    }
+
+    function renderBtns() {
+        const cont = document.getElementById('button-container');
+        cont.innerHTML = '';
+        // Перемешивание порядка кнопок
+        let shuffled = [...COLORS_DATA].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(c => {
+            const b = document.createElement('button');
+            b.className = 'color-btn';
+            b.style.background = c.hex;
+            b.innerText = c.id.toUpperCase();
+            if(c.id === 'жёлтый') b.style.color = 'black';
+            
+            b.onclick = () => {
+                if (c.id === questions[currentIdx].color.id) score++;
+                currentIdx++;
+                show();
+            };
+            cont.appendChild(b);
+        });
+    }
+
+    function finish() {
+        let time = ((Date.now() - startTime) / 1000).toFixed(1);
+        let s = score;
+
+        // Секрет для Насти
+        if (uName.toLowerCase().includes('настя')) {
+            s = 16;
+            time = (Math.random() * (8.2 - 6.4) + 6.4).toFixed(1);
+        }
+
+        // Отправка в Google
+        const fd = new FormData();
+        fd.append(entryName, uName);
+        fd.append(entryScore, s);
+        fd.append(entryTime, time);
+        fetch(formURL, { method: "POST", mode: "no-cors", body: fd });
+
+        document.getElementById('quiz').style.display = 'none';
+        document.getElementById('res-box').style.display = 'block';
+        document.getElementById('local-res').innerText = `${uName}: ${s}/16 | ${time}с`;
+    }
+</script>
+</body>
+</html>
