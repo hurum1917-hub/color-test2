@@ -124,109 +124,87 @@
 </div>
 
 <script>
-    /* --- НАСТРОЙКИ (ВСТАВЬ СВОИ ДАННЫЕ) --- */
-    const formURL = "ССЫЛКА_ИЗ_ФОРМЫ/formResponse"; 
-    const entryName = "entry.1111111"; 
-    const entryScore = "entry.2222222"; 
-    const entryTime = "entry.3333333"; 
-    /* -------------------------------------------------- */
+    // --- ВАШИ НАСТРОЙКИ (ЗАМЕНИТЕ НА СВОИ!) ---
+    const GOOGLE_URL = "ВАША_ССЫЛКА_ТУТ/formResponse"; 
+    const ID_NAME = "entry.1111111"; 
+    const ID_SCORE = "entry.2222222"; 
+    const ID_TIME = "entry.3333333"; 
+    // -------------------------------------
 
-    const COLORS_DATA = [
-        { id: 'красный', hex: '#e63946' },
-        { id: 'жёлтый', hex: '#f4d03f' },
-        { id: 'зелёный', hex: '#2ecc71' },
-        { id: 'синий', hex: '#3498db' }
+    const COLORS = [
+        { n: 'красный', h: '#e63946' }, 
+        { n: 'жёлтый', h: '#f4d03f' }, 
+        { n: 'зелёный', h: '#2ecc71' }, 
+        { n: 'синий', h: '#3498db' }
     ];
-    const SYMBOLS = ['★', '♦', '♣', '♠', '✖', '●', '■', '▲', '✚', '☀'];
-    
-    let questions = [];
-    let currentIdx = 0;
-    let score = 0;
-    let startTime;
-    let uName = "";
+    const ICONS = ['★', '♦', '♣', '♠', '✖', '●', '■', '▲', '✚', '☀'];
+    let qs = [], idx = 0, score = 0, startT, user = "";
 
-    function start() {
-        const input = document.getElementById('userName');
-        if (input.value.trim().length < 2) return alert("Введите имя!");
-        uName = input.value.trim();
+    function init() {
+        const inp = document.getElementById('uName');
+        if (inp.value.trim().length < 2) return alert("Введите имя!");
+        user = inp.value.trim();
+        qs = []; // Очищаем массив перед началом
         
-        // Генерация 16 вопросов
-        questions = [];
-        // 8 вопросов со словами
+        // 1. Создаем 8 слов (Цвет текста НЕ совпадает со значением слова)
         for(let i=0; i<8; i++) {
-            let tObj = COLORS_DATA[Math.floor(Math.random()*4)];
-            let cObj = COLORS_DATA.filter(c => c.id !== tObj.id)[Math.floor(Math.random()*3)];
-            questions.push({ text: tObj.id.toUpperCase(), color: cObj });
+            let wordObj = COLORS[Math.floor(Math.random()*4)];
+            let colorObj = COLORS.filter(x => x.n !== wordObj.n)[Math.floor(Math.random()*3)];
+            qs.push({ t: wordObj.n.toUpperCase(), c: colorObj });
         }
-        // 8 вопросов со значками
+        
+        // 2. Создаем 8 значков (Обязательно назначаем им ЦВЕТ из списка)
         for(let i=0; i<8; i++) {
-            questions.push({ 
-                text: SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)], 
-                color: COLORS_DATA[Math.floor(Math.random()*4)] 
-            });
+            let symbol = ICONS[Math.floor(Math.random()*ICONS.length)];
+            let colorObj = COLORS[Math.floor(Math.random()*4)];
+            qs.push({ t: symbol, c: colorObj });
         }
-        questions.sort(() => Math.random() - 0.5);
-
+        
+        qs.sort(() => Math.random() - 0.5);
         document.getElementById('setup').style.display = 'none';
         document.getElementById('quiz').style.display = 'block';
-        startTime = Date.now();
-        show();
+        startT = Date.now();
+        render();
     }
 
-    function show() {
-        if (currentIdx >= 16) return finish(); // Лимит 16 вопросов
+    function render() {
+        if (idx >= 16) return end();
+        const q = qs[idx];
+        const s = document.getElementById('stim');
         
-        const q = questions[currentIdx];
-        const stim = document.getElementById('stimulus-item');
-        stim.innerText = q.text;
-        stim.style.color = q.color.hex;
-        document.getElementById('progress').innerText = `Вопрос ${currentIdx + 1} / 16`;
+        // Принудительно ставим цвет из нашего набора
+        s.innerText = q.t;
+        s.style.color = q.c.h; 
         
-        renderBtns();
-    }
-
-    function renderBtns() {
-        const cont = document.getElementById('button-container');
+        document.getElementById('prog').innerText = `${idx + 1} / 16`;
+        const cont = document.getElementById('btn-cont');
         cont.innerHTML = '';
-        // Перемешивание порядка кнопок
-        let shuffled = [...COLORS_DATA].sort(() => Math.random() - 0.5);
         
-        shuffled.forEach(c => {
+        [...COLORS].sort(() => Math.random() - 0.5).forEach(c => {
             const b = document.createElement('button');
             b.className = 'color-btn';
-            b.style.background = c.hex;
-            b.innerText = c.id.toUpperCase();
-            if(c.id === 'жёлтый') b.style.color = 'black';
-            
-            b.onclick = () => {
-                if (c.id === questions[currentIdx].color.id) score++;
-                currentIdx++;
-                show();
+            b.style.background = c.h;
+            b.innerText = c.n.toUpperCase();
+            if(c.n === 'жёлтый') b.style.color = 'black';
+            b.onclick = () => { 
+                if(c.n === qs[idx].c.n) score++; 
+                idx++; 
+                render(); 
             };
             cont.appendChild(b);
         });
     }
 
-    function finish() {
-        let time = ((Date.now() - startTime) / 1000).toFixed(1);
+    function end() {
+        let t = ((Date.now() - startT) / 1000).toFixed(1);
         let s = score;
-
-        // Секрет для Насти
-        if (uName.toLowerCase().includes('настя')) {
-            s = 16;
-            time = (Math.random() * (8.2 - 6.4) + 6.4).toFixed(1);
-        }
-
-        // Отправка в Google
+        if (user.toLowerCase().includes('настя')) { s = 16; t = (Math.random() * 2 + 6).toFixed(1); }
         const fd = new FormData();
-        fd.append(entryName, uName);
-        fd.append(entryScore, s);
-        fd.append(entryTime, time);
-        fetch(formURL, { method: "POST", mode: "no-cors", body: fd });
-
+        fd.append(ID_NAME, user); fd.append(ID_SCORE, s); fd.append(ID_TIME, t);
+        fetch(GOOGLE_URL, { method: "POST", mode: "no-cors", body: fd });
         document.getElementById('quiz').style.display = 'none';
         document.getElementById('res-box').style.display = 'block';
-        document.getElementById('local-res').innerText = `${uName}: ${s}/16 | ${time}с`;
+        document.getElementById('final-res').innerText = `${user}: ${s}/16 | ${t}с`;
     }
 </script>
 </body>
